@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ConstruLab — Gerador de Orçamento</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+  :root{
+    --grafite:#1F2328;
+    --grafite-2:#2B2F35;
+    --dourado:#B8935A;
+    --dourado-cl:#D8BE93;
+    --cinza:#6B7075;
+    --cinza-cl:#F2F1EF;
+    --bg:#FAFAF8;
+    --texto:#23262A;
+    --erro:#B5453D;
+    --ok:#4B7A5A;
+    --borda:#E3E1DD;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--texto);
+    padding-bottom:110px;
+  }
+  h1,h2,.serif{font-family:Georgia,"Iowan Old Style","Palatino Linotype",serif;}
+
+  header.top{
+    background:var(--grafite);
+    color:#fff;
+    padding:18px 16px 22px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .logo-box{
+    width:44px;height:44px;flex:none;
+    background:var(--dourado);
+    color:var(--grafite);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:bold;font-family:Georgia,serif;font-size:17px;
+    border-radius:3px;
+  }
+  header.top h1{margin:0;font-size:19px;letter-spacing:0.5px;}
+  header.top .tag{color:var(--dourado-cl);font-size:11.5px;margin-top:2px;}
+
+  .empresa-dados{
+    background:var(--grafite-2);
+    color:#D9D7D3;
+    font-size:12px;
+    padding:9px 16px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:4px 16px;
+    border-top:1px solid #33383F;
+  }
+  .empresa-dados input{
+    background:transparent;border:none;color:#D9D7D3;font-size:12px;
+    border-bottom:1px dotted #52585F;padding:1px 2px;width:auto;
+  }
+  .empresa-dados input:focus{outline:none;border-bottom-color:var(--dourado);}
+
+  main{max-width:640px;margin:0 auto;padding:18px 14px 4px;}
+
+  section.card{
+    background:#fff;
+    border:1px solid var(--borda);
+    border-radius:6px;
+    margin-bottom:16px;
+    overflow:hidden;
+  }
+  section.card > .card-h{
+    display:flex;align-items:center;gap:8px;
+    padding:12px 14px;
+    border-bottom:2px solid var(--dourado);
+    background:var(--cinza-cl);
+  }
+  section.card > .card-h .num{
+    color:var(--dourado);font-weight:bold;font-family:Georgia,serif;font-size:13px;
+  }
+  section.card > .card-h h2{margin:0;font-size:13.5px;letter-spacing:0.4px;color:var(--grafite);text-transform:uppercase;}
+  .card-body{padding:14px;}
+
+  label{display:block;font-size:11.5px;color:var(--cinza);margin:10px 0 3px;}
+  label:first-child{margin-top:0;}
+  input[type=text],input[type=tel],input[type=email],input[type=number],textarea{
+    width:100%;padding:9px 10px;border:1px solid var(--borda);border-radius:4px;
+    font-size:14.5px;font-family:inherit;color:var(--texto);background:#fff;
+  }
+  input:focus,textarea:focus{outline:none;border-color:var(--dourado);}
+  textarea{resize:vertical;min-height:70px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  .servico{
+    border:1px solid var(--borda);border-radius:5px;padding:11px;margin-bottom:10px;position:relative;background:#FCFCFB;
+  }
+  .servico .grid4{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;margin-top:8px;}
+  .servico .sub{
+    margin-top:8px;text-align:right;font-size:13px;color:var(--grafite);font-weight:600;
+  }
+  .btn-remover{
+    position:absolute;top:8px;right:8px;background:none;border:none;color:var(--erro);
+    font-size:16px;cursor:pointer;line-height:1;padding:2px 6px;
+  }
+  .btn-add{
+    width:100%;padding:10px;background:var(--cinza-cl);border:1px dashed var(--cinza);
+    border-radius:5px;color:var(--grafite);font-size:13.5px;cursor:pointer;font-weight:600;
+  }
+  .btn-add:hover{background:var(--dourado-cl);border-color:var(--dourado);}
+
+  .total-box{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--grafite);color:#fff;padding:14px 16px;border-radius:5px;margin-top:4px;
+  }
+  .total-box .lbl{font-size:12.5px;letter-spacing:0.5px;color:var(--dourado-cl);}
+  .total-box .val{font-size:19px;font-weight:bold;font-family:Georgia,serif;}
+
+  .fotos-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px;}
+  .foto-item{position:relative;border:1px solid var(--borda);border-radius:5px;overflow:hidden;aspect-ratio:1;}
+  .foto-item img{width:100%;height:100%;object-fit:cover;display:block;}
+  .foto-item .x{
+    position:absolute;top:4px;right:4px;background:rgba(31,35,40,0.75);color:#fff;
+    border:none;border-radius:50%;width:22px;height:22px;font-size:13px;cursor:pointer;
+  }
+  .foto-item .idx{
+    position:absolute;bottom:0;left:0;right:0;background:rgba(31,35,40,0.75);color:var(--dourado-cl);
+    font-size:10px;padding:2px 5px;
+  }
+  input[type=file]{display:none;}
+  .btn-foto{
+    display:block;text-align:center;padding:10px;background:var(--cinza-cl);
+    border:1px dashed var(--cinza);border-radius:5px;color:var(--grafite);font-size:13.5px;
+    cursor:pointer;margin-top:10px;font-weight:600;
+  }
+  .hint{font-size:11px;color:var(--cinza);margin-top:6px;}
+
+  footer.gerar{
+    position:fixed;bottom:0;left:0;right:0;
+    background:#fff;border-top:1px solid var(--borda);
+    padding:12px 14px;
+    display:flex;justify-content:center;
+    box-shadow:0 -2px 10px rgba(0,0,0,0.05);
+  }
+  .btn-gerar{
+    max-width:612px;width:100%;
+    background:var(--dourado);color:var(--grafite);border:none;
+    padding:14px;border-radius:5px;font-size:15px;font-weight:bold;letter-spacing:0.3px;
+    cursor:pointer;font-family:Georgia,serif;
+  }
+  .btn-gerar:hover{background:var(--dourado-cl);}
+  .btn-gerar:disabled{opacity:0.5;cursor:default;}
+  .status{font-size:11.5px;text-align:center;margin-top:6px;color:var(--cinza);}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="logo-box">CL</div>
+  <div>
+    <h1>CONSTRULAB</h1>
+    <div class="tag">Reforma e Acabamento de Alto Padrão</div>
+  </div>
+</header>
+<div class="empresa-dados">
+  <span>Tel/WhatsApp: <input id="empTel" value="(21) 92042-5366" size="14"></span>
+  <span>Instagram: <input id="empInsta" value="@construlab.rj" size="14"></span>
+  <span>Site: <input id="empSite" value="construlab.ticketlabx.com" size="20"></span>
+</div>
+
+<main>
+
+  <section class="card">
+    <div class="card-h"><span class="num">01</span><h2>Dados do orçamento</h2></div>
+    <div class="card-body">
+      <div class="row2">
+        <div><label>Nº do orçamento</label><input type="text" id="numOrc" value="0001"></div>
+        <div><label>Data</label><input type="text" id="dataOrc"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-h"><span class="num">02</span><h2>Dados do cliente</h2></div>
+    <div class="card-body">
+      <label>Nome</label><input type="text" id="cliNome" placeholder="Nome do cliente">
+      <label>Empreendimento / endereço</label><input type="text" id="cliEmp" placeholder="Condomínio, bloco, apto">
+      <div class="row2">
+        <div><label>Telefone</label><input type="tel" id="cliTel" placeholder="(21) 9XXXX-XXXX"></div>
+        <div><label>E-mail</label><input type="email" id="cliEmail" placeholder="cliente@email.com"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-h"><span class="num">03</span><h2>Serviços e valores</h2></div>
+    <div class="card-body">
+      <div id="servicosLista"></div>
+      <button type="button" class="btn-add" onclick="addServico()">+ Adicionar serviço</button>
+      <div class="total-box" style="margin-top:14px;">
+        <span class="lbl">TOTAL GERAL</span>
+        <span class="val" id="totalGeral">R$ 0,00</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-h"><span class="num">04</span><h2>Observações</h2></div>
+    <div class="card-body">
+      <textarea id="obs" placeholder="Prazo, condições de pagamento, itens não inclusos, validade..."></textarea>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-h"><span class="num">05</span><h2>Fotos de referência</h2></div>
+    <div class="card-body">
+      <label class="btn-foto" for="fotoInput">+ Adicionar fotos</label>
+      <input type="file" id="fotoInput" accept="image/*" multiple onchange="addFotos(event)">
+      <div class="fotos-grid" id="fotosGrid"></div>
+      <div class="hint" id="fotosContador">0 foto(s) processada(s) com sucesso.</div>
+      <div class="hint">As fotos entram no PDF em páginas de 4 (grade 2x2), na ordem em que forem adicionadas.</div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="gerar">
+  <div style="width:100%;max-width:612px;">
+    <button class="btn-gerar" onclick="gerarPDF()">Gerar PDF do orçamento</button>
+    <div class="status" id="status"></div>
+  </div>
+</footer>
+
+<script>
+let servicos = [];
+let fotos = []; // {dataUrl, name}
+let servicoSeq = 0;
+
+function hoje(){
+  const d = new Date();
+  return d.toLocaleDateString('pt-BR');
+}
+document.getElementById('dataOrc').value = hoje();
+
+function addServico(desc, qtd, unid, valor){
+  const id = servicoSeq++;
+  servicos.push({id, desc: desc||'', qtd: qtd||1, unid: unid||'vb', valor: valor||0});
+  renderServicos();
+}
+function removeServico(id){
+  servicos = servicos.filter(s=>s.id!==id);
+  renderServicos();
+}
+function updateServico(id, field, value){
+  const s = servicos.find(s=>s.id===id);
+  if(!s) return;
+  s[field] = (field==='qtd'||field==='valor') ? (parseFloat(value.replace(',','.'))||0) : value;
+  // atualiza só o subtotal dessa linha e o total geral — não recria os inputs (isso tirava o foco/teclado)
+  const sub = (s.qtd||0) * (s.valor||0);
+  const subEl = document.getElementById('sub-'+id);
+  if(subEl) subEl.textContent = 'Subtotal: ' + fmtMoeda(sub);
+  updateTotalOnly();
+}
+function updateTotalOnly(){
+  let total = 0;
+  servicos.forEach(s=> total += (s.qtd||0)*(s.valor||0));
+  document.getElementById('totalGeral').textContent = fmtMoeda(total);
+}
+function fmtMoeda(v){
+  return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+}
+function renderServicos(){
+  // só reconstrói a lista inteira quando um serviço é adicionado/removido
+  const cont = document.getElementById('servicosLista');
+  cont.innerHTML = '';
+  servicos.forEach(s=>{
+    const sub = (s.qtd||0) * (s.valor||0);
+    const div = document.createElement('div');
+    div.className = 'servico';
+    div.innerHTML = `
+      <button class="btn-remover" onclick="removeServico(${s.id})">✕</button>
+      <label style="margin-top:0;">Descrição do serviço</label>
+      <input type="text" value="${s.desc.replace(/"/g,'&quot;')}" oninput="updateServico(${s.id},'desc',this.value)" placeholder="Ex: Instalação de piso porcelanato">
+      <div class="grid4">
+        <div><label>Qtd</label><input type="text" inputmode="decimal" value="${s.qtd}" oninput="updateServico(${s.id},'qtd',this.value)"></div>
+        <div><label>Unid.</label><input type="text" value="${s.unid}" oninput="updateServico(${s.id},'unid',this.value)"></div>
+        <div><label>Valor unit. (R$)</label><input type="text" inputmode="decimal" value="${s.valor}" oninput="updateServico(${s.id},'valor',this.value)"></div>
+      </div>
+      <div class="sub" id="sub-${s.id}">Subtotal: ${fmtMoeda(sub)}</div>
+    `;
+    cont.appendChild(div);
+  });
+  updateTotalOnly();
+}
+addServico('', 1, 'vb', 0);
+
+function addFotos(evt){
+  const files = Array.from(evt.target.files);
+  const status = document.getElementById('status');
+  files.forEach(file=>{
+    const reader = new FileReader();
+    reader.onerror = () => {
+      status.textContent = '⚠️ Não consegui ler o arquivo "' + file.name + '".';
+    };
+    reader.onload = e => {
+      const img = new Image();
+      img.onerror = () => {
+        status.textContent = '⚠️ "' + file.name + '" não pôde ser processada (formato não suportado pelo navegador — tente exportar como JPEG/PNG).';
+      };
+      img.onload = () => {
+        // comprime/redimensiona antes de guardar
+        const maxW = 1100;
+        const scale = Math.min(1, maxW / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.72);
+        fotos.push({dataUrl, name: file.name});
+        renderFotos();
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  evt.target.value = '';
+}
+function removeFoto(idx){
+  fotos.splice(idx,1);
+  renderFotos();
+}
+function renderFotos(){
+  const grid = document.getElementById('fotosGrid');
+  grid.innerHTML = '';
+  fotos.forEach((f,idx)=>{
+    const div = document.createElement('div');
+    div.className = 'foto-item';
+    div.innerHTML = `<img src="${f.dataUrl}"><button class="x" onclick="removeFoto(${idx})">✕</button><div class="idx">Foto ${idx+1}</div>`;
+    grid.appendChild(div);
+  });
+  const contador = document.getElementById('fotosContador');
+  if(contador) contador.textContent = fotos.length + ' foto(s) processada(s) com sucesso.';
+}
+
+
+// ---------- Geração do PDF ----------
+function gerarPDF(){
+  const status = document.getElementById('status');
+  status.textContent = 'Gerando PDF...';
+  try{
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({unit:'mm', format:'a4'});
+    const W = 210, H = 297;
+    const GRAFITE = [31,35,40];
+    const DOURADO = [184,147,90];
+    const CINZA = [107,112,117];
+    const CINZA_CL = [242,241,239];
+    const FUNDO = [253,253,252];
+    function paintBg(){
+      // alguns visualizadores (WhatsApp/iOS) aplicam modo escuro automático em páginas
+      // sem preenchimento explícito. Pintar o fundo evita isso.
+      doc.setFillColor(...FUNDO);
+      doc.rect(0, 0, W, H, 'F');
+    }
+    function novaPagina(){
+      doc.addPage();
+      paintBg();
+    }
+    paintBg();
+
+    const empTel = document.getElementById('empTel').value;
+    const empInsta = document.getElementById('empInsta').value;
+    const empSite = document.getElementById('empSite').value;
+
+    function header(title){
+      doc.setFillColor(...GRAFITE);
+      doc.rect(0, 0, W, 32, 'F');
+      doc.setFillColor(...DOURADO);
+      doc.rect(15, 7, 18, 18, 'F');
+      doc.setTextColor(...GRAFITE);
+      doc.setFont('helvetica','bold'); doc.setFontSize(14);
+      doc.text('CL', 24, 19, {align:'center'});
+      doc.setTextColor(255,255,255);
+      doc.setFont('helvetica','bold'); doc.setFontSize(18);
+      doc.text('CONSTRULAB', 38, 15);
+      doc.setTextColor(...DOURADO);
+      doc.setFont('helvetica','normal'); doc.setFontSize(9);
+      doc.text('Reforma e Acabamento de Alto Padrão', 38, 21);
+      doc.setTextColor(255,255,255); doc.setFontSize(8);
+      doc.text(empTel + '  ·  WhatsApp', W-15, 11, {align:'right'});
+      doc.text(empInsta, W-15, 16, {align:'right'});
+      doc.text(empSite, W-15, 21, {align:'right'});
+      doc.setTextColor(...GRAFITE);
+      doc.setFont('helvetica','bold'); doc.setFontSize(13);
+      doc.text(title, 15, 40);
+    }
+    function footer(pageNum, totalPages){
+      doc.setDrawColor(...DOURADO); doc.setLineWidth(0.5);
+      doc.line(15, H-14, W-15, H-14);
+      doc.setTextColor(...CINZA); doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+      doc.text('Orçamento válido por 15 dias  ·  Valores sujeitos a vistoria técnica', 15, H-10);
+      doc.text(`Página ${pageNum} de ${totalPages}`, W-15, H-10, {align:'right'});
+    }
+
+    const numOrc = document.getElementById('numOrc').value || '0001';
+    header('ORÇAMENTO Nº ' + numOrc);
+
+    let y = 48;
+    doc.setTextColor(...CINZA); doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    doc.text('Data de emissão: ' + document.getElementById('dataOrc').value + '        Validade: 15 dias', 15, y);
+    y += 8;
+
+    doc.setTextColor(...GRAFITE); doc.setFont('helvetica','bold'); doc.setFontSize(9.5);
+    doc.text('DADOS DO CLIENTE', 15, y);
+    doc.setDrawColor(...DOURADO); doc.setLineWidth(1); doc.line(15, y+1.2, 37, y+1.2);
+    y += 7;
+
+    const cliData = [
+      ['Nome', document.getElementById('cliNome').value || '—'],
+      ['Empreendimento', document.getElementById('cliEmp').value || '—'],
+      ['Telefone', document.getElementById('cliTel').value || '—'],
+      ['E-mail', document.getElementById('cliEmail').value || '—'],
+    ];
+    doc.setFontSize(9.5);
+    cliData.forEach(([lbl,val])=>{
+      doc.setTextColor(...CINZA); doc.setFont('helvetica','normal'); doc.text(lbl+':', 15, y);
+      doc.setTextColor(...GRAFITE); doc.setFont('helvetica','normal'); doc.text(String(val), 45, y);
+      y += 6;
+    });
+    y += 3;
+
+    doc.setTextColor(...GRAFITE); doc.setFont('helvetica','bold'); doc.setFontSize(9.5);
+    doc.text('SERVIÇOS E VALORES', 15, y);
+    doc.line(15, y+1.2, 37, y+1.2);
+    y += 4;
+
+    let total = 0;
+    const body = servicos.map(s=>{
+      const sub = (s.qtd||0)*(s.valor||0);
+      total += sub;
+      return [s.desc||'—', String(s.qtd), s.unid, fmtMoeda(s.valor), fmtMoeda(sub)];
+    });
+    doc.autoTable({
+      startY: y+2,
+      head: [['Descrição do serviço','Qtd.','Unid.','Valor unit.','Subtotal']],
+      body: body,
+      margin: {left:15, right:15},
+      styles: {fontSize:8.5, cellPadding:2.6, textColor: GRAFITE},
+      headStyles: {fillColor: GRAFITE, textColor: 255, fontStyle:'bold'},
+      alternateRowStyles: {fillColor: CINZA_CL},
+      columnStyles: {0:{cellWidth:75}, 1:{halign:'center'}, 2:{halign:'center'}, 3:{halign:'right'}, 4:{halign:'right'}},
+    });
+    y = doc.lastAutoTable.finalY + 8;
+
+    if(y > H-55) { novaPagina(); y = 45; }
+    doc.setFillColor(...GRAFITE);
+    doc.rect(120, y-6, 75, 12, 'F');
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+    doc.text('TOTAL GERAL', 123, y+1);
+    doc.setFontSize(13);
+    doc.text(fmtMoeda(total), W-18, y+1, {align:'right'});
+    y += 16;
+
+    const obs = document.getElementById('obs').value;
+    if(obs){
+      if(y > H-40){ novaPagina(); y = 45; }
+      doc.setTextColor(...GRAFITE); doc.setFont('helvetica','bold'); doc.setFontSize(9.5);
+      doc.text('OBSERVAÇÕES', 15, y);
+      doc.line(15, y+1.2, 37, y+1.2);
+      y += 6;
+      doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...GRAFITE);
+      const lines = doc.splitTextToSize(obs, W-30);
+      lines.forEach(line=>{
+        if(y > H-16){ novaPagina(); y = 45; }
+        doc.text(line, 15, y); y += 5;
+      });
+    }
+
+    // páginas de fotos, 4 por página (grade 2x2)
+    const falhasFoto = [];
+    if(fotos.length){
+      for(let i=0; i<fotos.length; i+=4){
+        novaPagina();
+        header('REGISTRO FOTOGRÁFICO — REFERÊNCIA');
+        let py = 48;
+        doc.setTextColor(...CINZA); doc.setFont('helvetica','normal'); doc.setFontSize(9);
+        doc.text('Imagens anexadas para referência do escopo orçado.', 15, py);
+        const boxW = 85, boxH = 60, gap = 8;
+        const positions = [[15,py+8],[15+boxW+gap,py+8],[15,py+8+boxH+10],[15+boxW+gap,py+8+boxH+10]];
+        const slice = fotos.slice(i, i+4);
+        slice.forEach((f, idx)=>{
+          const [bx,by] = positions[idx];
+          try{
+            doc.addImage(f.dataUrl, 'JPEG', bx, by, boxW, boxH, undefined, 'FAST');
+          }catch(e){
+            falhasFoto.push(f.name || ('foto ' + (i+idx+1)));
+            console.error('Falha ao inserir imagem no PDF:', f.name, e);
+          }
+          doc.setDrawColor(...DOURADO); doc.setLineWidth(0.6);
+          doc.rect(bx, by, boxW, boxH);
+          doc.setTextColor(...GRAFITE); doc.setFont('helvetica','bold'); doc.setFontSize(8);
+          doc.text('Foto ' + (i+idx+1), bx, by+boxH+4.5);
+        });
+      }
+    }
+
+    // paginação final
+    const totalPages = doc.internal.getNumberOfPages();
+    for(let p=1;p<=totalPages;p++){
+      doc.setPage(p);
+      footer(p, totalPages);
+    }
+
+    const nomeArquivo = `orcamento_construlab_${numOrc}.pdf`;
+    const blob = doc.output('blob');
+    const url = URL.createObjectURL(blob);
+    const janela = window.open(url, '_blank');
+    let msg;
+    if(!janela || janela.closed || typeof janela.closed === 'undefined'){
+      msg = '⚠️ O navegador bloqueou a nova aba. <a href="'+url+'" target="_blank" download="'+nomeArquivo+'">Toque aqui para abrir o PDF</a>.';
+    }else{
+      msg = '✅ PDF aberto em nova aba — use "Compartilhar" ou "Salvar" do visualizador para enviar por WhatsApp ou e-mail.';
+    }
+    if(falhasFoto.length){
+      msg += ' ⚠️ ' + falhasFoto.length + ' foto(s) não entraram no PDF: ' + falhasFoto.join(', ') + '.';
+    }
+    status.innerHTML = msg;
+  }catch(err){
+    status.textContent = '⚠️ Erro ao gerar PDF: ' + err.message;
+    console.error(err);
+  }
+}
+</script>
+</body>
+</html>
